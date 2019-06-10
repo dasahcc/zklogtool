@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2014 Alen Caljkusic.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,8 +38,10 @@ public abstract class Arguments {
 
     public final static String DATA_DECODER = "-data-decoder";
 
-    //log options  
+    //log options
     public final static String LOG_FILE = "-log-file";
+
+    public final static String UNCOMPRESS = "--uncompress";
 
     //log flags
     public final static String FOLLOW = "--follow";

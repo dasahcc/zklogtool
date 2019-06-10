@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2014 Alen Caljkusic.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,7 @@
 package com.zklogtool.data;
 
 import org.apache.jute.Record;
+import org.apache.zookeeper.txn.Txn;
 import org.apache.zookeeper.txn.TxnHeader;
 
 /**
@@ -127,6 +128,7 @@ public class Transaction {
 
     private TxnHeader txnHeader;
     private Record txnRecord;
+    private Txn txn;
 
     public Transaction(TxnHeader txnHeader, Record txnRecord) {
         super();

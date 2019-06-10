@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2014 Alen Caljkusic.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,12 +18,16 @@ package com.zklogtool.printer;
 import com.zklogtool.data.Transaction;
 import com.zklogtool.util.Util;
 import static com.zklogtool.util.Util.getACLString;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import static java.lang.System.lineSeparator;
 import java.nio.ByteBuffer;
 import static java.nio.ByteBuffer.wrap;
 import java.util.Date;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 import org.apache.jute.Record;
 import org.apache.zookeeper.ZooDefs.OpCode;
 import org.apache.zookeeper.data.ACL;
@@ -55,6 +59,8 @@ public class TransactionPrinter {
 
     int indentation;
 
+    boolean uncompress = false;
+
     /**
      *
      * @param sb <code>StringBuilder</code> to which information is be appended
@@ -68,6 +74,21 @@ public class TransactionPrinter {
 
         indentation = 0;
     }
+
+    /**
+     *
+     * @param sb <code>StringBuilder</code> to which information is be appended
+     * @param dd Decoder used to convert transaction data byte array to
+     * <code>String</code>. Transaction types that hold data are create and
+     * setData.
+     */
+    public TransactionPrinter(StringBuilder sb, DataDecoder dd, boolean uncompress) {
+        this.sb = sb;
+        this.dd = dd;
+        this.uncompress = uncompress;
+        indentation = 0;
+    }
+
 
     public int getIndentation() {
         return indentation;
@@ -125,7 +146,7 @@ public class TransactionPrinter {
     }
 
     private void printRecord(Record r, int type) {
-
+        byte[] data = null;
         switch (type) {
 
             case OpCode.create:
@@ -137,7 +158,11 @@ public class TransactionPrinter {
                 printEphermal(createTxn.getEphemeral());
                 printParentCVersion(createTxn.getParentCVersion());
                 printACL(createTxn.getAcl());
-                printData(createTxn.getData());
+                data = createTxn.getData();
+                if (uncompress) {
+                    data = uncompressData(data);
+                }
+                printData(data);
                 break;
 
             case OpCode.delete:
@@ -152,7 +177,11 @@ public class TransactionPrinter {
                 SetDataTxn setDataTxn = (SetDataTxn) r;
                 printOperation("setData");
                 printPath(setDataTxn.getPath());
-                printData(setDataTxn.getData());
+                data = setDataTxn.getData();
+                if (uncompress) {
+                    data = uncompressData(data);
+                }
+                printData(data);
                 printVersion(setDataTxn.getVersion());
                 break;
 
@@ -277,6 +306,38 @@ public class TransactionPrinter {
 
         indentation -= 2;
 
+    }
+
+    private static boolean isCompressed(byte[] bytes) {
+        if ((bytes == null) || (bytes.length < 2)) {
+            return false;
+        } else {
+            return ((bytes[0] == (byte) (GZIPInputStream.GZIP_MAGIC)) && (bytes[1] == (byte) (
+                GZIPInputStream.GZIP_MAGIC >> 8)));
+        }
+    }
+
+    private byte[] uncompressData(byte[] data) {
+        if (!isCompressed(data)) {
+            return data;
+        }
+
+        try {
+            GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data));
+
+            byte[] buffer = new byte[1024];
+            int length;
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            while ((length = gzipInputStream.read(buffer)) != -1) {
+                baos.write(buffer, 0, length);
+            }
+            gzipInputStream.close();
+            baos.close();
+            return baos.toByteArray();
+        } catch (Exception e) {
+            // Need to log it some how in the future.
+            return data;
+        }
     }
 
 }

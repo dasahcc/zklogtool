@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2014 Alen Caljkusic.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,10 @@ import com.zklogtool.reader.TransactionLogReaderFactory;
 import com.zklogtool.util.PropertiesReader;
 import java.io.File;
 import java.io.IOException;
+import org.apache.zookeeper.txn.CreateTxn;
+import org.apache.zookeeper.txn.SetDataTxn;
+import org.apache.zookeeper.txn.Txn;
+
 import static java.lang.System.exit;
 
 /**
@@ -50,6 +54,14 @@ public class CommandLog {
      */
     @Parameter(names = Arguments.FOLLOW, description = "Output appended data as the transactions are written to logs")
     public boolean follow = false;
+
+    /**
+     * If true zklogtool will uncompress the data from payload when data is compressed by gzip
+     *
+     */
+    @Parameter(names = Arguments.UNCOMPRESS, description = "Uncompress the data if data is compressed by gzip")
+    public boolean uncompress = false;
+
 
     /**
      * When <code>Arguments.FOLLOW</code> option is used user may choose to
@@ -113,7 +125,7 @@ public class CommandLog {
             exit(1);
         }
 
-        final TransactionPrinter printer = new TransactionPrinter(print, decoder);
+        final TransactionPrinter printer = new TransactionPrinter(print, decoder, uncompress);
 
         if (dataLogDir != null) {
 
@@ -299,5 +311,4 @@ public class CommandLog {
         return true;
 
     }
-
 }
